@@ -104,11 +104,60 @@ public class TransactionManager {
 	
 //R4
 	public SortedMap<Long, List<String>> deliveryRegionsPerNT() {
-		return new TreeMap<Long, List<String>>();
+		SortedMap<Long, List<String>> deliveryRegions = new TreeMap<>();
+
+		// Calculate the number of transactions per region
+		Map<Region, Long> transactionsPerRegion = new HashMap<>();
+		for (Transaction transaction : transactionMap.values()) {
+			Region region = transaction.getOffer().getPlace().getRegion();
+			if (!transactionsPerRegion.containsKey(region)) {
+				transactionsPerRegion.put(region, 1L);
+			} else {
+				transactionsPerRegion.put(region, transactionsPerRegion.get(region) + 1);
+			}
+		}
+
+		// Create a list of regions for each number of transactions
+		for (Region region : transactionsPerRegion.keySet()) {
+			long numTransactions = transactionsPerRegion.get(region);
+			if (!deliveryRegions.containsKey(numTransactions)) {
+				deliveryRegions.put(numTransactions, new ArrayList<>());
+			}
+			deliveryRegions.get(numTransactions).add(region.getName());
+		}
+
+		return deliveryRegions;
+
 	}
 	
 	public SortedMap<String, Integer> scorePerCarrier(int minimumScore) {
-		return new TreeMap<String, Integer>();
+		SortedMap<String, Integer> scorePerCarrier = new TreeMap<>();
+
+		// Calculate the average score for each carrier
+		Map<Carrier, List<Integer>> scoresPerCarrier = new HashMap<>();
+		for (Transaction transaction : transactionMap.values()) {
+			if (transaction.getScore() >= minimumScore) {
+				Carrier carrier = transaction.getCarrier();
+				if (!scoresPerCarrier.containsKey(carrier)) {
+					scoresPerCarrier.put(carrier, new ArrayList<>());
+				}
+				scoresPerCarrier.get(carrier).add(transaction.getScore());
+			}
+		}
+
+		// Calculate the average score for each carrier and add to the result map
+		for (Carrier carrier : scoresPerCarrier.keySet()) {
+			List<Integer> scores = scoresPerCarrier.get(carrier);
+			int sum = 0;
+			for (int score : scores) {
+				sum += score;
+			}
+			int averageScore = sum / scores.size();
+			scorePerCarrier.put(carrier.getName(), averageScore);
+		}
+
+		return scorePerCarrier;
+
 	}
 	
 	public SortedMap<String, Long> nTPerProduct() {
